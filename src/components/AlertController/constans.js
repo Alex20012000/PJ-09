@@ -1,0 +1,3 @@
+export const GEO_BLOCKED = "GEO_BLOCKED"; 
+export const EMPTY_LOCATION = "EMPTY_LOCATION";
+export const NOT_FOUND_LOCATION = "NOT_FOUND_LOCATION";

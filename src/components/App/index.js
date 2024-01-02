@@ -1,13 +1,15 @@
-import styles from './index.module.scss';
+import {useCallback, useEffect, useState} from 'react';
+
 import Header from '../Header';
 import Form from '../Form';
-import {request} from '../../api';
-import {useCallback, useEffect, useState} from 'react';
+import AlertController from '../AlertController';
 import WeatherController from '../WeatherController';
-import {TO_DAY} from '../WeatherController/constants';
 
-const GEO_BLOCKED = "GEO_BLOCKED";
-const EMPTY_LOCATION = "EMPTY_LOCATION";
+import {request} from '../../api';
+import {TO_DAY} from '../WeatherController/constants';
+import {GEO_BLOCKED, EMPTY_LOCATION, NOT_FOUND_LOCATION} from '../AlertController/constans';
+
+import styles from './index.module.scss';
 
 function App() {
 
@@ -23,6 +25,7 @@ function App() {
     navigator.geolocation.getCurrentPosition((position) => {
       const {latitude: lat, longitude: lon} = position.coords;
       setGeoLocation({lat, lon});
+      setAlert(null);
     }, () => {
       setAlert(GEO_BLOCKED);
     });
@@ -38,7 +41,14 @@ function App() {
       const {main, name, weather, wind, sys, dt} = res.data;
       setDailyWeather({main, name, weather, wind, sys, dt});
       setGeoLocation(res.data.coord);
-    }));
+      setAlert(null);
+    }))
+    .catch((error) => {
+      const status = error.response.status;
+      if (status === 404) {
+        setAlert(NOT_FOUND_LOCATION);
+      } 
+    })
   };
 
   const getNextAnyDayWeather = useCallback(({
@@ -77,13 +87,15 @@ const noDataWeather = !dailyWeather && !fiveDayWeathers
             <Header location={dailyWeather?.name} />
             <Form switcherDisabled={noDataWeather} getWeather={getCurrentDailyWeather} toSwitch={setSwitcherType} getCurrenPosition={getCurrentGeoLocation}/>
             <div className={styles.weathers}>
-              {alert === GEO_BLOCKED && !dailyWeather && <span className={styles.alert}>Нет доступа к вашей геопозиции</span>}
-              {alert === EMPTY_LOCATION && !dailyWeather && <span className={styles.alert}>Введите ваш населённый пункт </span>}
-              <WeatherController 
+              <AlertController
+                existDataWeather={!!dailyWeather}
+                codeAlert={alert}
+              />
+              {!alert && <WeatherController 
                 dailyWeather={dailyWeather} 
                 switcherType={switcherType} 
                 fiveDayWeathers={fiveDayWeathers}
-              />
+              />}
             </div>
           </div>
         </div>  
